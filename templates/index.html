@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aadhaar Detail Extractor</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 40px; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { color: #2c3e50; text-align: center; margin-bottom: 25px; }
+        .upload-section { border: 2px dashed #3498db; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; cursor: pointer; }
+        button { background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 6px; width: 100%; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #2980b9; }
+        #status { text-align: center; margin: 15px 0; color: #7f8c8d; font-style: italic; }
+        
+        /* Results Section */
+        .results-card { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; display: none; }
+        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
+        .label { font-weight: bold; color: #7f8c8d; }
+        .value { color: #2c3e50; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 Aadhaar Scanner</h2>
+    
+    <div class="upload-section">
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <p onclick="document.getElementById('fileInput').click()">Click to Select Aadhaar Image</p>
+    </div>
+
+    <button onclick="uploadAndProcess()">Extract Details</button>
+
+    <div id="status">Ready to scan...</div>
+
+    <div class="results-card" id="resultsCard">
+        <h3 style="text-align: center; color: #27ae60;">Personal Details Section</h3>
+        <div class="detail-row"><span class="label">Name:</span> <span id="resName" class="value">-</span></div>
+        <div class="detail-row"><span class="label">DOB:</span> <span id="resDOB" class="value">-</span></div>
+        <div class="detail-row"><span class="label">Gender:</span> <span id="resGender" class="value">-</span></div>
+        <div class="detail-row"><span class="label">Aadhaar No:</span> <span id="resAadhaar" class="value">-</span></div>
+    </div>
+</div>
+
+<script>
+    async function uploadAndProcess() {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) {
+            alert("Please select an image first!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        // Update UI status
+        const status = document.getElementById('status');
+        const resultsCard = document.getElementById('resultsCard');
+        status.innerText = "🚀 AI is thinking... (this may take 10-20 seconds)";
+        resultsCard.style.display = "none";
+
+        try {
+            const response = await fetch('/extract', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                status.innerText = "❌ Error: " + data.error;
+            } else {
+                // Fill the results
+                document.getElementById('resName').innerText = data.Name || "Not Found";
+                document.getElementById('resDOB').innerText = data["Date of Birth"] || "Not Found";
+                document.getElementById('resGender').innerText = data.Gender || "Not Found";
+                document.getElementById('resAadhaar').innerText = data["Aadhaar Number"] || "Not Found";
+                
+                status.innerText = "✅ Extraction Complete!";
+                resultsCard.style.display = "block";
+            }
+        } catch (err) {
+            status.innerText = "❌ Connection failed. Is the Flask server running?";
+            console.error(err);
+        }
+    }
+</script>
+
+</body>
+</html>
